@@ -1,0 +1,63 @@
+name: Build Android APK from HTML/CSS
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dependencies dan Build APK
+        run: |
+          # Buat package.json jika belum ada
+          if [ ! -f package.json ]; then
+            echo '{"name":"html-app","version":"1.0.0","dependencies":{}}' > package.json
+          fi
+
+          # Install Capacitor
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+
+          # Inisialisasi Capacitor jika belum ada
+          if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
+            npx cap init "Aplikasi Web" "com.example.htmlapp" --web-dir .
+          fi
+
+          # Tambahkan Android
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+          # Sinkronisasi project
+          npx cap sync android
+
+          # Build APK
+          cd android
+          chmod +x ./gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-app-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
