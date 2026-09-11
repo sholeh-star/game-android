@@ -2,15 +2,13 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main", "master" ] # Berjalan di branch main atau master
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # TAMBAHKAN 3 BARIS DI BAWAH INI (Ganti 'nama-folder-project' sesuai folder tempat file gradlew Anda berada)
-    defaults:
-      run:
-        working-directory: ./game-android 
 
     steps:
     - name: Checkout Code
@@ -25,15 +23,29 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    - name: Make Gradle Executable
-      run: chmod +x ./gradlew
-
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    - name: Temukan dan Jalankan Build APK
+      run: |
+        # Mencari letak file gradlew secara otomatis di semua folder
+        GRADLEW_PATH=$(find . -name gradlew -print -quit)
+        
+        if [ -z "$GRADLEW_PATH" ]; then
+          echo "ERROR: File gradlew tidak ditemukan di repositori ini!"
+          exit 1
+        fi
+        
+        # Masuk ke folder tempat gradlew berada
+        DIR_PATH=$(dirname "$GRADLEW_PATH")
+        cd "$DIR_PATH"
+        
+        echo "Mengubah izin akses gradlew di: $DIR_PATH"
+        chmod +x ./gradlew
+        
+        echo "Memulai proses build APK..."
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug-apk
-        # JANGAN LUPA sesuaikan path artifact ini juga jika berada di dalam folder
-        path: game-android/app/build/outputs/apk/debug/app-debug.apk 
+        name: aplikasi-debug-apk
+        path: |
+          **/build/outputs/apk/debug/*.apk
