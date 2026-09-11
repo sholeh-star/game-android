@@ -1,8 +1,8 @@
-name: Build Android APK
+name: Build Android APK from HTML/CSS
 
 on:
   push:
-    branches: [ "main", "master" ] # Berjalan di branch main atau master
+    branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
 
@@ -14,38 +14,49 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Set up NodeJS
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
-    - name: Temukan dan Jalankan Build APK
+    - name: Install Dependencies dan Build APK
       run: |
-        # Mencari letak file gradlew secara otomatis di semua folder
-        GRADLEW_PATH=$(find . -name gradlew -print -quit)
-        
-        if [ -z "$GRADLEW_PATH" ]; then
-          echo "ERROR: File gradlew tidak ditemukan di repositori ini!"
-          exit 1
+        # Buat package.json jika belum ada di repositori
+        if [ ! -f package.json ]; then
+          echo '{"name": "html-app", "version": "1.0.0", "dependencies": {}}' > package.json
         fi
-        
-        # Masuk ke folder tempat gradlew berada
-        DIR_PATH=$(dirname "$GRADLEW_PATH")
-        cd "$DIR_PATH"
-        
-        echo "Mengubah izin akses gradlew di: $DIR_PATH"
+
+        # Install Capacitor
+        npm install @capacitor/core @capacitor/cli
+        npm install @capacitor/android
+
+        # Inisialisasi Capacitor jika belum ada konfigurasinya
+        # Mengasumsikan file HTML/CSS Anda ada di root folder '.' atau folder 'www' / 'dist'
+        # Jika file HTML Anda ada di dalam folder tertentu (misal: public), ganti web-dir nya
+        if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
+          npx cap init "Aplikasi Web" "com.example.htmlapp" --web-dir . --web-runtime-config false
+        fi
+
+        # Tambahkan platform Android dan sinkronisasi berkas HTML
+        npx cap add android || true
+        npx cap sync android
+
+        # Masuk ke folder android untuk melakukan kompilasi APK
+        cd android
         chmod +x ./gradlew
-        
-        echo "Memulai proses build APK..."
         ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: aplikasi-debug-apk
-        path: |
-          **/build/outputs/apk/debug/*.apk
+        name: html-app-debug-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
