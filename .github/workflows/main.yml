@@ -2,11 +2,16 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main ] # Ganti dengan nama branch Anda jika bukan main
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # TAMBAHKAN 3 BARIS DI BAWAH INI (Ganti 'nama-folder-project' sesuai folder tempat file gradlew Anda berada)
+    defaults:
+      run:
+        working-directory: ./game-android 
+
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -30,4 +35,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: app-debug-apk
-        path: app/build/outputs/apk/debug/app-debug.json # Sesuaikan path jika berbeda
+        # JANGAN LUPA sesuaikan path artifact ini juga jika berada di dalam folder
+        path: game-android/app/build/outputs/apk/debug/app-debug.apk 
