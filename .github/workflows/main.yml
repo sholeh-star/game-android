@@ -38,9 +38,21 @@ jobs:
           # Install Capacitor
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-          # Inisialisasi Capacitor jika belum ada
+          # Buat folder www
+          mkdir -p www
+
+          # Salin file game ke www
+          cp -R game-android/. www/
+
+          # Pastikan index.html tersedia
+          if [ ! -f www/index.html ]; then
+            echo "ERROR: www/index.html tidak ditemukan!"
+            exit 1
+          fi
+
+          # Inisialisasi Capacitor
           if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ]; then
-            npx cap init "Aplikasi Web" "com.example.htmlapp" --web-dir .
+            npx cap init "Aplikasi Web" "com.example.htmlapp" --web-dir www
           fi
 
           # Tambahkan Android
@@ -48,7 +60,7 @@ jobs:
             npx cap add android
           fi
 
-          # Sinkronisasi project
+          # Sinkronisasi
           npx cap sync android
 
           # Build APK
